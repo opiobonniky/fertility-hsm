@@ -1,0 +1,958 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ───────────────────────────────────────────────────────
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum InfertilityType {
+  PRIMARY
+  SECONDARY
+}
+
+enum ARTType {
+  ICSI
+  IVF
+  IUI
+  FET
+  NATURAL
+}
+
+enum PGDType {
+  PGS
+  PGD
+  NONE
+}
+
+enum CycleStatus {
+  UNDER_STIMULATION
+  OPU_SCHEDULED
+  OPU_COMPLETED
+  ET_SCHEDULED
+  ET_COMPLETED
+  PREGNANCY_TEST
+  PREGNANCY_CONFIRMED
+  CYCLE_CANCELLED
+  CYCLE_COMPLETED
+}
+
+enum EmbryoDay {
+  D0
+  D1
+  D2
+  D3
+  D4
+  D5
+  D6
+  D7
+}
+
+enum BiopsyType {
+  POLAR_BODY
+  BLASTOMERE
+  TROPHECTODERM
+}
+
+enum NGSResultStatus {
+  EUPLOID
+  ANEUPLOID
+  MOSAIC
+  FAILED
+  PENDING
+}
+
+enum CryoStatus {
+  STORED
+  USED
+  TRANSFERRED
+  DISCARDED
+  EXPIRED
+}
+
+enum InvestigationType {
+  SEMEN_ANALYSIS
+  HORMONAL
+  INFECTION_SCREENING
+  GENETIC
+  LAPAROSCOPY
+  HSG
+  ULTRASOUND
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  WIRE_TRANSFER
+  CHEQUE
+  INSURANCE
+}
+
+enum TaskType {
+  FOLLOW_UP_CALL
+  EMBRYO_DISPOSAL
+  GAMETE_REMINDER
+  EXPIRY_NOTIFICATION
+  GENERAL
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Diagnosis {
+  PCOS
+  ANOVULATION
+  ENDOMETRIOSIS
+  TUBAL_FACTOR
+  FIBROID
+  UTERINE_FACTOR
+  UNEXPLAINED
+  RECURRENT_MISCARRIAGE
+  AZOOSPERMIA
+  PGS_ACGH
+  PGD
+  GENDER_SELECTION
+  KLINEFELTER_SYNDROME
+  MALE_FACTOR
+  DOR
+  OTHER
+}
+
+// ── Models ──────────────────────────────────────────────────────
+
+// ── Models ──────────────────────────────────────────────────────
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique  // e.g., "ADMIN", "CONSULTANT"
+  label     String            // e.g., "System Admin", "Consultant Doctor"
+  hierarchy Int      @default(0)
+  isSystem  Boolean  @default(false) // System roles can't be deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  staffCode    String    @unique
+  email        String    @unique
+  password     String
+  firstName    String
+  lastName     String
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  phone        String?
+  isActive              Boolean   @default(true)
+  lastLogin             DateTime?
+  permissions           Json?
+  refreshToken          String?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdPatients   Patient[]                @relation("CreatedPatient")
+  createdCycles     Cycle[]                  @relation("CreatedCycle")
+  createdTasks      Task[]                   @relation("AssignedBy")
+  assignedTasks     Task[]                   @relation("Assignee")
+  completedTasks    Task[]                   @relation("CompletedBy")
+  performedOPU      OPURecord[]              @relation("PerformedOPU")
+  performedICSI     EmbryologyRecord[]       @relation("PerformedICSI")
+  performedBiopsy   EmbryoBiopsy[]           @relation("PerformedBiopsy")
+  reportedNGS       NGSReport[]              @relation("ReportedBy")
+  physicianCycles   Cycle[]                  @relation("TreatingPhysician")
+  physicianET       ETRecord[]               @relation("ETPhysician")
+  embryologistET    ETRecord[]               @relation("ETEmbryologist")
+  witnessET         ETRecord[]               @relation("ETWitness")
+  recordedFollicles FollicleTracking[]       @relation("RecordedBy")
+  createdCouples    Couple[]                 @relation("CreatedCouple")
+  createdInvoices   Invoice[]                @relation("CreatedInvoice")
+  receivedPayments  Payment[]                @relation("ReceivedBy")
+  createdAppts      Appointment[]            @relation("CreatedAppointment")
+  physicianAppts    Appointment[]            @relation("PhysicianAppointment")
+  orderedInvestigations Investigation[]      @relation("OrderedBy")
+  createdCryoEmbryos EmbryoCryo[]            @relation("CreatedEmbryoCryo")
+  createdSpermCryo  SpermCryo[]              @relation("CreatedSpermCryo")
+  createdOocyteCryo OocyteCryo[]             @relation("CreatedOocyteCryo")
+  createdHistory    PatientMedicalHistory[]  @relation("CreatedHistory")
+  createdEmbryologyRecords EmbryologyRecord[] @relation("CreatedEmbryologyRecord")
+  auditLogs         AuditLog[]               @relation("AuditUser")
+  diagnosedPatients PatientDiagnosis[]       @relation("DiagnosedPatient")
+  prescribedPrescriptions Prescription[]     @relation("PrescribedBy")
+}
+
+model Patient {
+  id            String   @id @default(uuid())
+  mrn           String   @unique
+  oldMrn        String?
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  nationality   String?
+  nationalId    String?
+  gender        Gender
+  phone         String
+  email         String?
+  address       String?
+  city          String?
+  occupation    String?
+  company       String?
+  hearUsFrom    String?
+  branch        String?
+  isActive      Boolean  @default(true)
+
+  createdById String
+  createdBy   User @relation("CreatedPatient", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  medicalHistory    PatientMedicalHistory?
+  diagnoses         PatientDiagnosis[]
+  wifeInCouple      Couple?        @relation("WifePatient")
+  husbandInCouple   Couple?        @relation("HusbandPatient")
+  investigations    Investigation[]
+  spermCryo         SpermCryo[]
+  oocyteCryo        OocyteCryo[]
+  invoices          Invoice[]
+  appointments      Appointment[]
+  semenData         SemenDatum[]
+  tasks             Task[]         @relation("TaskPatient")
+  prescriptions     Prescription[]
+
+  @@index([mrn])
+  @@index([firstName, lastName])
+  @@index([phone])
+}
+
+model PatientMedicalHistory {
+  id                    String   @id @default(uuid())
+  patientId             String   @unique
+  patient               Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  obHistory             String?
+  surgicalHistory       String?
+  gynecologicalHistory  String?
+  adolescence           String?
+  contraception         String?
+  lmp                   DateTime?
+  menstrualCycle        String?
+  gravida               Int?
+  para                  Int?
+  abortion              Int?
+  ectopic               Int?
+  livingChildren        Int?
+
+  createdById String
+  createdBy   User @relation("CreatedHistory", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PatientDiagnosis {
+  id          String    @id @default(uuid())
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  diagnosis   Diagnosis
+  notes       String?
+  diagnosedAt DateTime  @default(now())
+
+  diagnosedById String
+  diagnosedBy   User     @relation("DiagnosedPatient", fields: [diagnosedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model Couple {
+  id                   String          @id @default(uuid())
+  wifePatientId        String          @unique
+  wifePatient          Patient         @relation("WifePatient", fields: [wifePatientId], references: [id])
+  husbandPatientId     String          @unique
+  husbandPatient       Patient         @relation("HusbandPatient", fields: [husbandPatientId], references: [id])
+  marriageDuration     Int?
+  infertilityType      InfertilityType?
+  infertilityDiagnosis String?
+
+  createdById String
+  createdBy   User   @relation("CreatedCouple", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cycles Cycle[]
+
+  @@index([wifePatientId])
+  @@index([husbandPatientId])
+}
+
+model Cycle {
+  id                  String      @id @default(uuid())
+  coupleId            String
+  couple              Couple      @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  cycleNumber         Int
+  artType             ARTType
+  pgdType             PGDType?
+  pgdGene             String?
+  pgdMutation         String?
+  pgdInheritanceMode  String?
+  pgdMarkers          String?
+  pgdTestMethod       String?
+  pgdFemaleDiagnosis  String?
+  pgdMaleDiagnosis    String?
+  stimulationProtocol String?
+  stimulationDrugs    Json?
+  bmi                 Float?
+  cycleWarnings       String?
+  lmp                 DateTime?
+  hcgDate             DateTime?
+  opuDate             DateTime?
+  etDate              DateTime?
+  status              CycleStatus @default(UNDER_STIMULATION)
+  notes               String?
+
+  treatingPhysicianId String?
+  treatingPhysician   User?   @relation("TreatingPhysician", fields: [treatingPhysicianId], references: [id])
+
+  createdById String
+  createdBy   User    @relation("CreatedCycle", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  follicleTrackings FollicleTracking[]
+  opuRecord         OPURecord?
+  semenData         SemenDatum[]
+  embryologyRecords EmbryologyRecord[]
+  biopsies          EmbryoBiopsy[]
+  etRecord          ETRecord?
+  pregnancyTest     PregnancyTest?
+  pregnancyOutcome  PregnancyOutcome?
+  embryoCryos       EmbryoCryo[]
+  tasks             Task[]       @relation("CycleTask")
+  prescriptions     Prescription[]
+
+  @@index([coupleId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model FollicleTracking {
+  id          String   @id @default(uuid())
+  cycleId     String
+  cycle       Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  date        DateTime
+  rightOvary  Json?
+  leftOvary   Json?
+  endometrium String?
+  notes       String?
+
+  recordedById String
+  recordedBy   User   @relation("RecordedBy", fields: [recordedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([cycleId, dayNumber])
+  @@index([cycleId])
+}
+
+model OPURecord {
+  id              String   @id @default(uuid())
+  cycleId         String   @unique
+  cycle           Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  anaesthesiaType String?
+  follicleCount   Int?
+  oocyteCount     Int?
+  miiOocyteCount  Int?
+  operationNotes  String?
+  complications   String?
+  postOpPlan      String?
+
+  performedById String
+  performedBy   User   @relation("PerformedOPU", fields: [performedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SemenDatum {
+  id                      String   @id @default(uuid())
+  cycleId                 String
+  cycle                   Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  patientId               String?
+  patient                 Patient? @relation(fields: [patientId], references: [id])
+  specimenType            String?
+  processingMethod        String?
+  collectionDate          DateTime?
+  abstinenceDays          Int?
+  preVolume               Float?
+  preConcentration        Float?
+  preTotalCount           Float?
+  preMotility             Float?
+  preProgressiveMotility  Float?
+  preMorphology           Float?
+  preViscosity            String?
+  preColor                String?
+  prePH                   Float?
+  postVolume              Float?
+  postConcentration       Float?
+  postTotalCount          Float?
+  postMotility            Float?
+  postProgressiveMotility Float?
+  postMorphology          Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cycleId])
+}
+
+model EmbryologyRecord {
+  id                String    @id @default(uuid())
+  cycleId           String
+  cycle             Cycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  dayNumber         EmbryoDay
+  embryoCount       Int
+  icsiMethod        String?
+  details           Json?
+  notes             String?
+
+  icsiPerformedById String?
+  icsiPerformedBy   User?     @relation("PerformedICSI", fields: [icsiPerformedById], references: [id])
+  createdById       String
+  createdBy         User      @relation("CreatedEmbryologyRecord", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([cycleId])
+}
+
+model EmbryoBiopsy {
+  id            String     @id @default(uuid())
+  cycleId       String
+  cycle         Cycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  embryoNumber  Int
+  biopsyDate    DateTime
+  biopsyType    BiopsyType
+  cellsRemoved  Int?
+  labNotes      String?
+
+  performedById String
+  performedBy   User       @relation("PerformedBiopsy", fields: [performedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  ngsReport NGSReport?
+
+  @@index([cycleId])
+}
+
+model NGSReport {
+  id              String         @id @default(uuid())
+  embryoBiopsyId  String         @unique
+  embryoBiopsy    EmbryoBiopsy   @relation(fields: [embryoBiopsyId], references: [id], onDelete: Cascade)
+  embryoNumber    Int
+  result          NGSResultStatus @default(PENDING)
+  chromosomeDetails Json?
+  reportFile      String?
+  notes           String?
+
+  reportedAt   DateTime @default(now())
+  reportedById String
+  reportedBy   User     @relation("ReportedBy", fields: [reportedById], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model ETRecord {
+  id                  String   @id @default(uuid())
+  cycleId             String   @unique
+  cycle               Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  etDate              DateTime
+  catheterType        String?
+  catheterBrand       String?
+  transferredEmbryos  Json?
+  residueEmbryos      String?
+  notes               String?
+
+  physicianId     String
+  physician       User     @relation("ETPhysician", fields: [physicianId], references: [id])
+  embryologistId  String
+  embryologist    User     @relation("ETEmbryologist", fields: [embryologistId], references: [id])
+  witnessId       String?
+  witness         User?    @relation("ETWitness", fields: [witnessId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model PregnancyTest {
+  id        String   @id @default(uuid())
+  cycleId   String   @unique
+  cycle     Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  bhcgLevel Float?
+  testDate  DateTime
+
+  createdAt DateTime @default(now())
+}
+
+model PregnancyOutcome {
+  id           String    @id @default(uuid())
+  cycleId      String    @unique
+  cycle        Cycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  outcome      String
+  deliveryDate DateTime?
+  weight       Float?
+  height       Float?
+  anomalies    String?
+  notes        String?
+
+  createdAt DateTime @default(now())
+}
+
+// ── Cryo Models ─────────────────────────────────────────────────
+
+model CryoTank {
+  id           String   @id @default(uuid())
+  name         String
+  location     String?
+  capacity     Int?
+  currentCount Int      @default(0)
+  fillLevel    Float?
+  lastChecked  DateTime?
+  isActive     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  embryoCryos EmbryoCryo[]
+  spermCryos  SpermCryo[]
+  oocyteCryos OocyteCryo[]
+}
+
+model EmbryoCryo {
+  id              String    @id @default(uuid())
+  cycleId         String
+  cycle           Cycle     @relation(fields: [cycleId], references: [id])
+  embryoNumber    Int
+  freezeDate      DateTime
+  tankId          String
+  tank            CryoTank  @relation(fields: [tankId], references: [id])
+  partition       String?
+  level           String?
+  goblet          String?
+  containerColor  String?
+  protocol        String?
+  media           String?
+  strawDetails    String?
+  renewalDate     DateTime?
+  status          CryoStatus @default(STORED)
+  discardedAt     DateTime?
+  discardedReason String?
+  notes           String?
+
+  createdById String
+  createdBy   User       @relation("CreatedEmbryoCryo", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([tankId])
+  @@index([status])
+  @@index([renewalDate])
+}
+
+model SpermCryo {
+  id             String    @id @default(uuid())
+  patientId      String
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  freezeDate     DateTime
+  tankId         String
+  tank           CryoTank  @relation(fields: [tankId], references: [id])
+  partition      String?
+  level          String?
+  goblet         String?
+  containerColor String?
+  protocol       String?
+  source         String?
+  count          Int?
+  motility       Float?
+  renewalDate    DateTime?
+  status         CryoStatus @default(STORED)
+  discardedAt    DateTime?
+  notes          String?
+
+  createdById String
+  createdBy   User       @relation("CreatedSpermCryo", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([tankId])
+  @@index([patientId])
+  @@index([renewalDate])
+}
+
+model OocyteCryo {
+  id             String    @id @default(uuid())
+  patientId      String
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  freezeDate     DateTime
+  tankId         String
+  tank           CryoTank  @relation(fields: [tankId], references: [id])
+  partition      String?
+  level          String?
+  goblet         String?
+  containerColor String?
+  protocol       String?
+  source         String?
+  count          Int?
+  renewalDate    DateTime?
+  status         CryoStatus @default(STORED)
+  discardedAt    DateTime?
+  notes          String?
+
+  createdById String
+  createdBy   User       @relation("CreatedOocyteCryo", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([tankId])
+  @@index([patientId])
+  @@index([renewalDate])
+}
+
+// ── Investigation ───────────────────────────────────────────────
+
+model Investigation {
+  id          String           @id @default(uuid())
+  patientId   String
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type        InvestigationType
+  date        DateTime
+  results     Json?
+  reportFile  String?
+  notes       String?
+  isAbnormal  Boolean?
+
+  orderedById String
+  orderedBy   User             @relation("OrderedBy", fields: [orderedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([type])
+}
+
+// ── Appointment ─────────────────────────────────────────────────
+
+model Clinic {
+  id          String   @id @default(uuid())
+  name        String
+  branch      String?
+  startTime   String
+  endTime     String
+  workingDays Json?
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  appointments Appointment[]
+}
+
+model Appointment {
+  id          String           @id @default(uuid())
+  patientId   String
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  physicianId String?
+  physician   User?            @relation("PhysicianAppointment", fields: [physicianId], references: [id])
+  service     String
+  clinicId    String?
+  clinic      Clinic?          @relation(fields: [clinicId], references: [id])
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  notes       String?
+
+  createdById String
+  createdBy   User             @relation("CreatedAppointment", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([physicianId])
+  @@index([startTime])
+  @@index([status])
+}
+
+// ── Billing ─────────────────────────────────────────────────────
+
+model Invoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
+  patientId      String
+  patient        Patient       @relation(fields: [patientId], references: [id])
+  dueDate        DateTime
+  branch         String?
+  currency       String        @default("AED")
+  subTotal       Float
+  vatRate        Float         @default(0)
+  vatAmount      Float         @default(0)
+  discountAmount Float         @default(0)
+  totalAmount    Float
+  paidAmount     Float         @default(0)
+  balanceAmount  Float
+  status         InvoiceStatus @default(DRAFT)
+  insuranceClaim Boolean?
+  notes          String?
+
+  createdById String
+  createdBy   User            @relation("CreatedInvoice", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lineItems InvoiceLineItem[]
+  payments  Payment[]
+
+  @@index([patientId])
+  @@index([invoiceNumber])
+  @@index([status])
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount      Float
+  method      PaymentMethod
+  reference   String?
+  paymentDate DateTime      @default(now())
+  notes       String?
+
+  receivedById String
+  receivedBy   User          @relation("ReceivedBy", fields: [receivedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+// ── Prescription ───────────────────────────────────────────────
+
+enum PrescriptionStatus {
+  ACTIVE
+  COMPLETED
+  DISCONTINUED
+  CANCELLED
+}
+
+enum MedicationRoute {
+  ORAL
+  INJECTION
+  TOPICAL
+  SUBLINGUAL
+  RECTAL
+  INHALATION
+  OTHER
+}
+
+enum MedicationFrequency {
+  ONCE_DAILY
+  TWICE_DAILY
+  THREE_TIMES_DAILY
+  FOUR_TIMES_DAILY
+  EVERY_OTHER_DAY
+  WEEKLY
+  ONCE
+  AS_DIRECTED
+  OTHER
+}
+
+model Prescription {
+  id              String              @id @default(uuid())
+  patientId       String
+  patient         Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  cycleId         String?
+  cycle           Cycle?              @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  prescribedById  String
+  prescribedBy    User                @relation("PrescribedBy", fields: [prescribedById], references: [id])
+  medicationName  String
+  medicationRoute MedicationRoute     @default(ORAL)
+  dosage          String              // e.g. "5mg", "1 tablet"
+  frequency       MedicationFrequency
+  duration        String?             // e.g. "7 days", "2 weeks"
+  frequencyDetail String?             // Additional details, e.g. "after meals", "before bedtime"
+  startDate       DateTime
+  endDate         DateTime?
+  refills         Int                 @default(0)
+  refillsUsed     Int                 @default(0)
+  notes           String?
+  instructions    String?             // Patient-facing instructions
+  status          PrescriptionStatus  @default(ACTIVE)
+  diagnosis       String?             // Reason for prescription
+  sideEffects     String?             // Reported side effects
+  discontinuedAt  DateTime?
+  discontinuedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([cycleId])
+  @@index([prescribedById])
+  @@index([status])
+}
+
+// ── Task ────────────────────────────────────────────────────────
+
+model Task {
+  id            String      @id @default(uuid())
+  title         String
+  description   String?
+  type          TaskType    @default(GENERAL)
+  priority      TaskPriority @default(MEDIUM)
+  status        TaskStatus  @default(PENDING)
+
+  patientId String?
+  patient   Patient? @relation("TaskPatient", fields: [patientId], references: [id])
+  cycleId   String?
+  cycle     Cycle?   @relation("CycleTask", fields: [cycleId], references: [id])
+
+  assigneeId   String
+  assignee     User      @relation("Assignee", fields: [assigneeId], references: [id])
+  assignedById String
+  assignedBy   User      @relation("AssignedBy", fields: [assignedById], references: [id])
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  completedById String?
+  completedBy   User?     @relation("CompletedBy", fields: [completedById], references: [id])
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ── Audit Log ───────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("AuditUser", fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  changes   Json?
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ── Dynamic Selection Options (referral sources, branches, etc.) ───
+
+model SelectionOption {
+  id        String   @id @default(uuid())
+  category  String            // e.g., "hearUsFrom", "branch"
+  label     String            // Display label
+  value     String?           // Optional stored value (defaults to label)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, label])
+  @@index([category])
+  @@index([isActive])
+}
+
+// ── Dynamic RBAC ────────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g., "patient:view"
+  name        String            // e.g., "View Patient Records"
+  description String?
+  module      String            // e.g., "Patient Management"
+
+  createdAt DateTime @default(now())
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  assignedById String?
+
+  assignedAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+}

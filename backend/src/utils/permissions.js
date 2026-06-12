@@ -1,0 +1,177 @@
+// ── Role Constants ────────────────────────────────────────────
+export const ROLES = Object.freeze({
+  ADMIN: "ADMIN",
+  CONSULTANT: "CONSULTANT",
+  SPECIALIST: "SPECIALIST",
+  NURSE: "NURSE",
+  EMBRYOLOGIST: "EMBRYOLOGIST",
+  COUNSELLOR: "COUNSELLOR",
+  SONOGRAPHER: "SONOGRAPHER",
+  LAB_TECH: "LAB_TECH",
+  BILLING: "BILLING",
+  RECEPTIONIST: "RECEPTIONIST",
+  VIEWER: "VIEWER",
+});
+
+export const ALL_ROLES = Object.values(ROLES);
+
+// ── Role Hierarchy (higher = more access) ─────────────────────
+export const ROLE_HIERARCHY = {
+  ADMIN: 100,
+  CONSULTANT: 80,
+  SPECIALIST: 75,
+  EMBRYOLOGIST: 70,
+  NURSE: 60,
+  COUNSELLOR: 50,
+  SONOGRAPHER: 50,
+  LAB_TECH: 50,
+  BILLING: 40,
+  RECEPTIONIST: 30,
+  VIEWER: 10,
+};
+
+// ── Role Groupings ────────────────────────────────────────────
+export const MEDICAL_ROLES = [
+  ROLES.CONSULTANT,
+  ROLES.SPECIALIST,
+  ROLES.NURSE,
+  ROLES.EMBRYOLOGIST,
+  ROLES.COUNSELLOR,
+  ROLES.SONOGRAPHER,
+  ROLES.LAB_TECH,
+];
+
+export const ADMIN_ROLES = [ROLES.ADMIN];
+
+export const CLINICAL_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CONSULTANT,
+  ROLES.SPECIALIST,
+  ROLES.NURSE,
+  ROLES.EMBRYOLOGIST,
+];
+
+export const PATIENT_EDIT_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CONSULTANT,
+  ROLES.SPECIALIST,
+  ROLES.NURSE,
+  ROLES.COUNSELLOR,
+  ROLES.BILLING,
+  ROLES.RECEPTIONIST,
+];
+
+export const CYCLE_VIEW_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CONSULTANT,
+  ROLES.SPECIALIST,
+  ROLES.NURSE,
+  ROLES.EMBRYOLOGIST,
+  ROLES.COUNSELLOR,
+  ROLES.SONOGRAPHER,
+];
+
+export const CYCLE_CREATE_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CONSULTANT,
+  ROLES.SPECIALIST,
+];
+
+// ── Full Permission Matrix ────────────────────────────────────
+export const PERMISSIONS = {
+  "patient:register": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.COUNSELLOR, ROLES.BILLING, ROLES.RECEPTIONIST],
+  "patient:view": ALL_ROLES,
+  "patient:edit": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.COUNSELLOR, ROLES.BILLING, ROLES.RECEPTIONIST],
+  "patient:delete": ADMIN_ROLES,
+  "medical-history:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR],
+  "medical-history:edit": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE],
+  "diagnosis:manage": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "couple:manage": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "cycle:create": CYCLE_CREATE_ROLES,
+  "cycle:view": CYCLE_VIEW_ROLES,
+  "cycle:edit": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "cycle:cancel": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "follicle:record": [ROLES.ADMIN, ROLES.SPECIALIST, ROLES.SONOGRAPHER],
+  "follicle:view": CYCLE_VIEW_ROLES,
+  "opu:record": [ROLES.ADMIN, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST],
+  "opu:view": CYCLE_VIEW_ROLES,
+  "semen:record": [ROLES.ADMIN, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST, ROLES.LAB_TECH],
+  "semen:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST, ROLES.LAB_TECH],
+  "embryology:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST],
+  "embryology:record": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "embryology:grade": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "biopsy:manage": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "biopsy:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.EMBRYOLOGIST],
+  "ngs:record": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "ngs:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.EMBRYOLOGIST],
+  "et:manage": [ROLES.ADMIN, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST],
+  "et:view": CYCLE_VIEW_ROLES,
+  "pregnancy-test:record": [ROLES.ADMIN, ROLES.CONSULTANT],
+  "pregnancy-test:view": CYCLE_VIEW_ROLES,
+  "pregnancy-outcome:record": [ROLES.ADMIN, ROLES.CONSULTANT],
+  "pregnancy-outcome:view": CYCLE_VIEW_ROLES,
+  "cryo:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST],
+  "cryo:manage": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "cryo:discard": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "tank:manage": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "tank:view": [ROLES.ADMIN, ROLES.EMBRYOLOGIST],
+  "investigation:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.LAB_TECH],
+  "investigation:order": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "investigation:record-results": [ROLES.ADMIN, ROLES.EMBRYOLOGIST, ROLES.LAB_TECH],
+  "appointment:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.SONOGRAPHER, ROLES.LAB_TECH, ROLES.RECEPTIONIST],
+  "appointment:book": [ROLES.ADMIN, ROLES.RECEPTIONIST],
+  "appointment:edit": [ROLES.ADMIN, ROLES.RECEPTIONIST],
+  "invoice:create": [ROLES.ADMIN, ROLES.BILLING],
+  "invoice:view": [ROLES.ADMIN, ROLES.BILLING, ROLES.CONSULTANT, ROLES.SPECIALIST],
+  "invoice:update": [ROLES.ADMIN, ROLES.BILLING],
+  "invoice:cancel": [ROLES.ADMIN, ROLES.BILLING],
+  "payment:process": [ROLES.ADMIN, ROLES.BILLING],
+  "payment:view": [ROLES.ADMIN, ROLES.BILLING],
+  "report:kpi": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST, ROLES.BILLING],
+  "report:financial": [ROLES.ADMIN, ROLES.BILLING],
+  "report:export": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST, ROLES.BILLING],
+  "prescription:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.LAB_TECH],
+  "prescription:prescribe": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE],
+
+  "task:create": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.SONOGRAPHER, ROLES.LAB_TECH, ROLES.BILLING, ROLES.RECEPTIONIST],
+  "task:view": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.SONOGRAPHER, ROLES.LAB_TECH, ROLES.BILLING, ROLES.RECEPTIONIST],
+  "task:complete": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.NURSE, ROLES.EMBRYOLOGIST, ROLES.COUNSELLOR, ROLES.SONOGRAPHER, ROLES.LAB_TECH, ROLES.BILLING, ROLES.RECEPTIONIST],
+  "admin:users": ADMIN_ROLES,
+  "admin:settings": ADMIN_ROLES,
+  "admin:audit-logs": ADMIN_ROLES,
+  "permissions:manage": ADMIN_ROLES,
+  "spouse:auto-detect": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.RECEPTIONIST, ROLES.NURSE],
+  "report:opu-technologist": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST],
+  "report:icsi-rates": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.EMBRYOLOGIST],
+  "report:cycle-outcomes": [ROLES.ADMIN, ROLES.CONSULTANT, ROLES.SPECIALIST, ROLES.EMBRYOLOGIST],
+};
+
+// ── Helper Functions ──────────────────────────────────────────
+
+/**
+ * Check if a role has a specific permission (from static matrix).
+ */
+export function hasPermission(role, permission) {
+  if (!role) return false;
+  const allowedRoles = PERMISSIONS[permission];
+  if (!allowedRoles) return false;
+  return allowedRoles.includes(role);
+}
+
+/**
+ * Check if a role has at least the given minimum role level.
+ */
+export function hasMinRole(userRole, minRole) {
+  if (!userRole) return false;
+  return (ROLE_HIERARCHY[userRole] ?? 0) >= (ROLE_HIERARCHY[minRole] ?? 0);
+}
+
+/**
+ * Get all permissions for a given role from the static matrix.
+ */
+export function getPermissionsForRole(role) {
+  if (!role) return [];
+  return Object.entries(PERMISSIONS)
+    .filter(([, roles]) => roles.includes(role))
+    .map(([permission]) => permission);
+}
